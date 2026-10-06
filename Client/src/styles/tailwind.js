@@ -1,0 +1,20 @@
+// Reusable Tailwind design tokens shared by the auth pages and their controls.
+export const tw = {
+  authCard: 'relative border border-[#333339] bg-[#141418]/95 px-5 py-6 shadow-[8px_8px_0_#09090b] before:absolute before:-top-px before:left-[30px] before:h-0.5 before:w-[65px] before:bg-[#dfff00] sm:px-[31px] sm:py-[30px]',
+  field: 'mb-3 block',
+  fieldLabel: 'mb-[7px] flex items-center justify-between text-[9px] font-extrabold tracking-[.13em] text-[#dbdad4]',
+  fieldOptional: 'text-[8px] font-semibold tracking-normal text-[#85857e]',
+  fieldAction: 'text-[8px] text-[#99998f] hover:text-[#dfff00]',
+  inputFrame: 'flex h-[43px] items-center border border-[#3a3a40] bg-[#101014] focus-within:border-[#a9b42f]',
+  input: 'h-full min-w-0 flex-1 bg-transparent px-3 text-[11px] text-[#f4f2e9] outline-none placeholder:text-[#696970]',
+  inputIcon: 'px-3 text-[17px] text-[#aaa99f]',
+  primaryButton: 'flex h-[45px] w-full items-center justify-center gap-2 bg-[#dfff00] font-[Epilogue] text-[10px] font-extrabold tracking-[.14em] text-[#101014] transition hover:bg-[#edff62] disabled:cursor-wait disabled:opacity-60',
+  outlineButton: 'flex h-[38px] items-center justify-center border border-[#333339] bg-[#18181c] text-[8px] font-extrabold tracking-[.07em] text-[#77776f] transition hover:border-[#55555b] disabled:cursor-not-allowed disabled:opacity-70',
+  eventCard: 'min-h-[90px] border border-[#29292e] bg-[#1b1b20] p-3 transition-colors hover:border-[#55564b] hover:bg-[#232329]',
+  eventLabel: 'flex items-center justify-between text-[8px] font-extrabold tracking-[.08em] text-[#d1d0c8]',
+  eventTitle: 'mb-1 mt-3 text-[11px] font-extrabold uppercase text-[#f2f1eb]',
+  eventDetail: 'text-[9px] font-bold text-[#aaa99f]',
+  proofValue: 'font-[Epilogue] text-sm font-bold tracking-tight sm:text-base',
+  proofLabel: 'mt-1 block text-[7px] font-bold tracking-[.14em] text-[#aaa99f]',
+  notice: 'mt-2 border-l-2 p-2 text-[10px] leading-5',
+}
