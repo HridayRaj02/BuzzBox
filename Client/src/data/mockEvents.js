@@ -7,6 +7,15 @@ const image = {
   art: 'https://lh3.googleusercontent.com/aida-public/AB6AXuANt8hrVIKBMpfTLpGsYdhCD045mISeuOtnZwtBnC3kO76XR04zTVWC7hftlGGKLH6-KeSY7I4_LzYhGpWgQn15ymyeYiFoaT-dyyBIYD4aL_L6PowpeprRghIvELRLj26ArYj6J5gJTRNfvil1ZareQuJxeIF7RCI9hdYL6QwSr2xMJITEg3MvWHeu4zV9pRUsWzMTrh3nwa-bzmwhnenyBkJSlQSywcGd1-i6E9C8g7zuoFuc2DIQ',
 }
 
+const eventImages = [
+  'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1200&q=85',
+  'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=85',
+  'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=1200&q=85',
+  'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1200&q=85',
+  'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=85',
+  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=85',
+]
+
 const definitions = [
   ['MUSIC', image.vinyl, [
     ['Monsoon Frequency Sessions', 'An intimate selector set moving from warm jazz cuts to deep house.', 'Blue Tokai Listening Room', 'Mumbai'],
@@ -95,9 +104,7 @@ const weekendDaysUntil = (today.getDay() === 0 ? 5 : today.getDay() === 6 ? 6 : 
 const weekendStart = shiftDays(today, weekendDaysUntil)
 const weekendEnd = shiftDays(weekendStart, 2)
 const nextWeekStart = shiftDays(weekendEnd, 2)
-const imageForCategory = { MUSIC: image.vinyl, RAVE: image.rave, CLUBS: image.rave, COMEDY: image.comedy, FESTIVALS: image.art, 'LIVE SHOWS': image.vinyl, 'ART & CULTURE': image.art, EXPERIENCES: image.art, 'AFTER HOURS': image.rave }
-
-export const events = definitions.flatMap(([category, artwork, entries], categoryIndex) => entries.map(([title, description, venue, city], index) => {
+export const events = definitions.flatMap(([category, , entries], categoryIndex) => entries.map(([title, description, venue, city], index) => {
   const isTonight = index === 0 && (categoryIndex < 6 || categoryIndex === 8)
   const isFeaturedWeekend = categoryIndex === 7 && index === 0
   const isWeekendEvent = (categoryIndex + index) % 3 === 0
@@ -106,7 +113,7 @@ export const events = definitions.flatMap(([category, artwork, entries], categor
   if (['RAVE', 'CLUBS', 'FESTIVALS', 'LIVE SHOWS', 'AFTER HOURS'].includes(category)) categories.push('MUSIC')
   if (['RAVE', 'CLUBS', 'COMEDY'].includes(category)) categories.push('AFTER HOURS')
   if (['FESTIVALS', 'ART & CULTURE'].includes(category)) categories.push('EXPERIENCES')
-  const eventImage = artwork || imageForCategory[category]
+  const eventImage = eventImages[(index + categoryIndex) % eventImages.length]
   return {
     id: `${category.toLowerCase().replaceAll(' ', '-')}-${index + 1}`,
     category,
@@ -119,6 +126,20 @@ export const events = definitions.flatMap(([category, artwork, entries], categor
     venue,
     image: eventImage,
     action: 'Explore Event',
+    address: `${venue}, ${city}`,
+    latitude: 28.6139 + categoryIndex * 0.012 + index * 0.001,
+    longitude: 77.209 + categoryIndex * 0.012 + index * 0.001,
+    ageLimit: 18,
+    lineup: [
+      ['RAVE', 'CLUBS', 'AFTER HOURS'].includes(category) ? 'Local selectors' : 'Featured artists',
+      'Special guests',
+    ],
+    ticketTiers: [
+      { name: 'Early Access', price: 799, availableQuantity: 40 },
+      { name: 'General Entry', price: 1199, availableQuantity: 120 },
+      { name: 'Door Entry', price: 1599, availableQuantity: 30 },
+    ],
+    goodToKnow: ['Valid photo ID required', 'Re-entry is not permitted', 'Tickets are non-refundable'],
   }
 }))
 

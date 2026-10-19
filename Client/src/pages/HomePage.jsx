@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import DiscoveryHeader from '../components/home/DiscoveryHeader.jsx'
+import EventCard from '../components/home/EventCard.jsx'
 import { categories, events, eventMatchesDate, vibeTiles } from '../data/mockEvents.js'
 import { allCitiesOption, cityOptions } from '../data/cities.js'
 import CityDropdown from '../components/home/CityDropdown.jsx'
@@ -28,28 +30,19 @@ function SearchPanel({ onSearch, city, onCityChange }) {
   </form>
 }
 
-function EventCard({ event, featured = false, onAction }) {
-  const [saved, setSaved] = useState(false)
-  return <article className="group flex flex-col overflow-hidden rounded border border-[#22222b] bg-[#1b1b1f] transition hover:bg-[#1f1f23]">
-    <div className={`relative overflow-hidden bg-[#2a292e] ${featured ? 'aspect-[16/10]' : 'aspect-[4/3]'}`}>
-      <img src={event.image} alt={event.category} loading="lazy" className="size-full object-cover transition duration-500 group-hover:scale-105" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#131317]/65 to-transparent" />
-      <span className="absolute left-2 top-2 rounded bg-[#0e0e12]/90 px-2 py-1 text-[8px] font-extrabold uppercase tracking-widest text-[#d2f000]">{event.category}</span>
-      <button type="button" aria-label={saved ? 'Remove from saved events' : 'Save event'} aria-pressed={saved} onClick={() => setSaved((value) => !value)} className={`absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-[#0e0e12]/85 text-lg ${saved ? 'text-[#d2f000]' : 'text-white hover:text-[#d2f000]'}`}>{saved ? '♥' : '♡'}</button>
-    </div>
-    <div className="flex flex-1 flex-col justify-between gap-4 p-3.5">
-      <div><p className="mb-1 text-[9px] font-extrabold uppercase text-[#d2f000]">{event.date || 'Tonight'} &nbsp;·&nbsp; {event.time}</p><h3 className="line-clamp-2 font-[Epilogue] text-sm font-bold uppercase leading-tight">{event.title}</h3><p className="mt-1.5 text-[11px] text-[#c6c9ab]">⌖ &nbsp;{event.venue} · {event.city}</p></div>
-      <div className="flex justify-end"><button onClick={() => onAction(event)} type="button" className="rounded bg-[#d2f000] px-3 py-2 text-[9px] font-extrabold uppercase tracking-wider text-[#2c3400] transition hover:brightness-110">{event.action || 'Reserve'}</button></div>
-    </div>
-  </article>
-}
-
 export default function HomePage() {
-  useEffect(() => { window.scrollTo(0, 0) }, [])
-  const [activeCategory, setActiveCategory] = useState('ALL')
+  const location = useLocation()
+  const [activeCategory, setActiveCategory] = useState(() => sessionStorage.getItem('buzzbox:category') || 'ALL')
   const [appliedSearch, setAppliedSearch] = useState(null)
   const [selectedCity, setSelectedCity] = useState('Delhi NCR')
   const [notice, setNotice] = useState('')
+  useEffect(() => {
+    const savedCategory = sessionStorage.getItem('buzzbox:category') || 'ALL'
+    setActiveCategory(savedCategory)
+    const targetScroll = location.state?.scrollY ?? Number(sessionStorage.getItem('buzzbox:explore-scroll') || 0)
+    requestAnimationFrame(() => window.scrollTo(0, Number.isFinite(targetScroll) ? targetScroll : 0))
+  }, [location.key])
+  useEffect(() => { sessionStorage.setItem('buzzbox:category', activeCategory) }, [activeCategory])
   const filteredEvents = useMemo(() => events.filter((event) => {
     const categoryMatch = activeCategory === 'ALL' || (activeCategory === 'TONIGHT' ? eventMatchesDate(event, 'Tonight') : event.categories.includes(activeCategory))
     const cityMatch = selectedCity === allCitiesOption || event.city === selectedCity
@@ -75,14 +68,14 @@ export default function HomePage() {
 
       <section className="mb-10">
         <SectionHeading id="radar" eyebrow={appliedSearch ? '◉ Filtered radar' : '◉ Live radar'} title={appliedSearch ? 'Search results' : 'Live on the radar'} description={appliedSearch ? 'Events matching your selected city, date, category, and keywords.' : "What's happening around the city right now."} />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{radarResults.map((event) => <EventCard key={event.id} event={event} featured onAction={showPreviewNotice} />)}</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{radarResults.map((event) => <EventCard key={event.id} event={event} featured />)}</div>
         {!filteredEvents.length && <p className="rounded border border-[#22222b] bg-[#1b1b1f] p-6 text-sm text-[#c6c9ab]">No events match these filters. Try another city, date, category, or keyword.</p>}
       </section>
 
       {!appliedSearch && <>
       <section className="mb-10" id="experiences"><SectionHeading eyebrow="Curated aesthetics" title="What's your vibe?"/><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{vibeTiles.map(([title, subtitle, image]) => <button type="button" key={title} onClick={() => { setActiveCategory(title.includes('Funny') ? 'COMEDY' : title.includes('Art') ? 'ART & CULTURE' : title.includes('Loud') ? 'RAVE' : title.includes('Dance') ? 'CLUBS' : 'MUSIC'); document.getElementById('radar')?.scrollIntoView({ behavior: 'smooth' }) }} className="group relative flex h-44 items-end overflow-hidden rounded bg-[#1f1f23] p-3 text-left sm:h-56"><img src={image} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-110"/><span className="absolute inset-0 bg-gradient-to-t from-[#0e0e12] via-[#0e0e12]/40 to-transparent"/><span className="relative"><b className="block font-[Epilogue] text-xs font-extrabold uppercase leading-tight group-hover:text-[#d2f000] sm:text-sm">{title}</b><small className="mt-1 block text-[8px] uppercase tracking-wider text-[#c6c9ab]">{subtitle}</small></span></button>)}</div></section>
 
-      <section className="mb-10"><div className="flex items-end justify-between"><SectionHeading eyebrow="Plans worth making" title="This weekend" description="The city's most interesting plans, in one place."/><div className="mb-5 hidden gap-1 sm:flex"><button type="button" aria-label="Previous events" onClick={() => setNotice('You are viewing the first set of weekend picks.')} className="size-9 rounded bg-[#1b1b1f] hover:bg-[#2a292e]">‹</button><button type="button" aria-label="Next events" onClick={() => setNotice('More weekend picks will be added to this preview.')} className="size-9 rounded bg-[#1b1b1f] hover:bg-[#2a292e]">›</button></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{weekendResults.map((event) => <EventCard key={event.id} event={event} onAction={showPreviewNotice}/>)}</div>{!weekendResults.length && <p className="text-sm text-[#c6c9ab]">No weekend plans match the selected city and category yet.</p>}</section>
+      <section className="mb-10"><div className="flex items-end justify-between"><SectionHeading eyebrow="Plans worth making" title="This weekend" description="The city's most interesting plans, in one place."/><div className="mb-5 hidden gap-1 sm:flex"><button type="button" aria-label="Previous events" onClick={() => setNotice('You are viewing the first set of weekend picks.')} className="size-9 rounded bg-[#1b1b1f] hover:bg-[#2a292e]">‹</button><button type="button" aria-label="Next events" onClick={() => setNotice('More weekend picks will be added to this preview.')} className="size-9 rounded bg-[#1b1b1f] hover:bg-[#2a292e]">›</button></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{weekendResults.map((event) => <EventCard key={event.id} event={event}/>)}</div>{!weekendResults.length && <p className="text-sm text-[#c6c9ab]">No weekend plans match the selected city and category yet.</p>}</section>
 
       <section className="mb-10" id="nearby"><SectionHeading eyebrow="◉ Proximity radar" title="Near Delhi NCR" description="Events and experiences closer to your current perimeter."/><div className="grid gap-2 md:grid-cols-3">{nearby.map(([distance, title, description, time]) => <article key={title} className="border-y border-[#22222b] bg-[#1b1b1f]/80 px-3 py-4 sm:border sm:p-4"><div className="mb-4 flex justify-between gap-2 text-[8px] font-extrabold uppercase tracking-wider"><span className="text-[#d2f000]">{distance}</span><span>{time}</span></div><h3 className="font-[Epilogue] text-sm font-extrabold uppercase">{title}</h3><p className="my-2 text-xs leading-5 text-[#c6c9ab]">{description}</p><button onClick={() => showPreviewNotice({ title })} type="button" className="text-[9px] font-extrabold uppercase text-[#d2f000]">Explore event →</button></article>)}</div></section>
 
