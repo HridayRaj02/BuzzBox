@@ -1,17 +1,18 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import buzzboxLogo from '../../../BUZZ BOX LOGO.png'
 import Button from './Button.jsx'
 import { tw } from '../styles/tailwind.js'
+import { demoCredentials, demoSessionKey } from '../data/demoCredentials.js'
 
-function Field({ id, label, type = 'text', placeholder, autoComplete, minLength, action, onAction, optional = false }) {
+function Field({ id, label, type = 'text', placeholder, autoComplete, minLength, action, onAction, optional = false, value, onChange }) {
   const [showPassword, setShowPassword] = useState(false)
   const inputType = type === 'password' && showPassword ? 'text' : type
   return (
     <label className={tw.field} htmlFor={id}>
       <span className={tw.fieldLabel}>{label}{optional && <span className={tw.fieldOptional}>OPTIONAL</span>}{action && <button className={tw.fieldAction} type="button" onClick={onAction}>{action}</button>}</span>
       <span className={tw.inputFrame}>
-        <input className={tw.input} id={id} name={id} type={inputType} placeholder={placeholder} autoComplete={autoComplete} required={!optional} minLength={minLength} />
+        <input className={tw.input} id={id} name={id} type={inputType} placeholder={placeholder} autoComplete={autoComplete} required={!optional} minLength={minLength} value={value} onChange={onChange} />
         {type === 'password' && <button className={tw.inputIcon} type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? '◉' : '◎'}</button>}
       </span>
     </label>
@@ -26,10 +27,32 @@ function SocialButtons() {
 }
 
 export default function AuthForm({ mode }) {
+  const navigate = useNavigate()
   const isSignup = mode === 'signup'
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
   const [showResetInfo, setShowResetInfo] = useState(false)
+  const [email, setEmail] = useState('')
+  const [passwordValue, setPasswordValue] = useState('')
+  const demoSubmitRequested = useRef(false)
+  const formRef = useRef(null)
+
+  useEffect(() => {
+    if (!demoSubmitRequested.current) return
+    demoSubmitRequested.current = false
+    formRef.current?.requestSubmit()
+  }, [email, passwordValue])
+
+  function startDemoLogin() {
+    setNotice(null)
+    if (email === demoCredentials.email && passwordValue === demoCredentials.password) {
+      formRef.current?.requestSubmit()
+      return
+    }
+    demoSubmitRequested.current = true
+    setEmail(demoCredentials.email)
+    setPasswordValue(demoCredentials.password)
+  }
 
   async function submit(event) {
     event.preventDefault()
@@ -38,6 +61,17 @@ export default function AuthForm({ mode }) {
     const password = formData.get('password')
     if (isSignup && password !== formData.get('confirmPassword')) {
       setNotice({ type: 'error', message: 'Your passwords do not match.' })
+      return
+    }
+
+    if (!isSignup) {
+      if (formData.get('email') !== demoCredentials.email || password !== demoCredentials.password) {
+        setNotice({ type: 'error', message: 'Email or password is incorrect. Check the demo credentials and try again.' })
+        return
+      }
+      // Temporary demo-session flag only; never store the password.
+      window.sessionStorage.setItem(demoSessionKey, 'active')
+      navigate('/explore')
       return
     }
 
@@ -56,7 +90,7 @@ export default function AuthForm({ mode }) {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Could not complete your request.')
-      setNotice({ type: 'success', message: isSignup ? `Account created. Welcome to the scene, ${result.user.name}.` : `Welcome back, ${result.user.name}.` })
+      navigate('/explore')
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof TypeError ? 'Could not reach the sign-in service. Check that the API server is running.' : error.message })
     } finally {
@@ -68,17 +102,18 @@ export default function AuthForm({ mode }) {
     <section className={tw.authCard}>
       <div className="flex items-center gap-2 text-[8px] font-extrabold tracking-[.17em] text-[#aaa99f]"><img className="h-[25px] w-[25px] object-contain" src={buzzboxLogo} alt="" />YOUR NIGHT, UNLOCKED</div>
       <h1 className="mb-1.5 mt-[17px] font-[Epilogue] text-[23px] leading-tight font-extrabold tracking-[-.045em]">{isSignup ? 'CREATE YOUR ACCOUNT' : 'ENTER THE SCENE'}</h1>
-      <p className="mb-[18px] text-[11px] leading-[1.65] text-[#aaa99f]">{isSignup ? 'Sign up to discover events, save your scene, and manage your passes.' : 'Sign in to unlock passes, secret lineups, and your digital ticket vault.'}</p>
+      <p className="mb-[18px] text-[11px] leading-[1.65] text-[#aaa99f]">{isSignup ? 'Sign up to discover events, save your scene, and manage your passes.' : 'Temporary demo access only. Use the demo credentials to preview the discovery page.'}</p>
 
       {!isSignup && <div className="mb-[17px] grid grid-cols-2 border-b border-[#39393e] text-center text-[9px] font-extrabold tracking-[.08em]"><button className="cursor-not-allowed px-1 py-[11px] text-[#77776f]" type="button" disabled title="Phone sign-in needs an SMS provider">PHONE OTP · SOON</button><span className="border-b-2 border-[#dfff00] px-1 py-[11px] text-[#dfff00]">EMAIL &amp; PASSWORD</span></div>}
 
-      <form onSubmit={submit}>
+      <form ref={formRef} onSubmit={submit}>
         {isSignup && <Field id="name" label="FULL NAME" placeholder="How should we call you?" autoComplete="name" minLength={2} />}
-        <Field id="email" label="EMAIL ADDRESS" type="email" placeholder="you@example.com" autoComplete="email" />
+        <Field id="email" label="EMAIL ADDRESS" type="email" placeholder="you@example.com" autoComplete="email" value={isSignup ? undefined : email} onChange={isSignup ? undefined : (event) => setEmail(event.target.value)} />
         {isSignup && <Field id="phone" label="MOBILE NUMBER" type="tel" placeholder="+91  00000 00000" autoComplete="tel" optional />}
-        <Field id="password" label="PASSWORD" type="password" placeholder={isSignup ? 'At least 8 characters' : 'Enter your password'} autoComplete={isSignup ? 'new-password' : 'current-password'} minLength={8} action={!isSignup ? 'FORGOT?' : undefined} onAction={() => setShowResetInfo(true)} />
+        <Field id="password" label="PASSWORD" type="password" placeholder={isSignup ? 'At least 8 characters' : 'Enter your password'} autoComplete={isSignup ? 'new-password' : 'current-password'} minLength={8} action={!isSignup ? 'FORGOT?' : undefined} onAction={() => setShowResetInfo(true)} value={isSignup ? undefined : passwordValue} onChange={isSignup ? undefined : (event) => setPasswordValue(event.target.value)} />
         {isSignup && <Field id="confirmPassword" label="CONFIRM PASSWORD" type="password" placeholder="Enter your password again" autoComplete="new-password" minLength={8} />}
         <Button className="mt-1" type="submit" disabled={busy}>{busy ? 'PLEASE WAIT…' : isSignup ? 'CREATE ACCOUNT' : 'SIGN IN'} <span className="text-[17px]">↗</span></Button>
+        {!isSignup && <Button variant="outline" className="mt-2 w-full border-[#dfff00] text-[#dfff00] hover:bg-[#232520]" type="button" onClick={startDemoLogin} disabled={busy}>One-Tap Demo Login</Button>}
       </form>
 
       {showResetInfo && <p className="mt-2 border-l-2 border-[#dfff00] bg-[#232520] p-2 text-[10px] leading-5 text-[#e9edc6]" role="status">Password reset is not set up yet. Please contact BuzzBox support.</p>}
