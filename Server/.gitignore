@@ -33,3 +33,5 @@ Thumbs.db
 dist/
 build/
 coverage/
+
+/generated/prisma
