@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { events } from '../data/mockEvents.js'
 import EventCard from '../components/home/EventCard.jsx'
+import DiscoveryHeader from '../components/home/DiscoveryHeader.jsx'
 import { calculateTotal, isEventEnded, savedEventIds, setEventSaved } from '../utils/eventUtils.js'
 
 const money = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
@@ -64,8 +65,8 @@ export default function EventDetailsPage() {
   }, [eventId])
 
   return <div className="min-h-screen bg-[#131317] bg-[radial-gradient(rgba(144,147,120,.14)_1px,transparent_1px)] bg-[size:24px_24px] text-[#e4e1e7] selection:bg-[#d2f000] selection:text-[#2c3400]">
-    <header className="sticky top-0 z-20 border-b border-white/5 bg-[#131317]/95 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4"><Link to="/explore" className="font-[Epilogue] text-sm font-extrabold uppercase tracking-wide">BUZZBOX</Link><Link to="/explore" state={{ scrollY: Number(sessionStorage.getItem('buzzbox:explore-scroll') || 0) }} className="text-[10px] font-extrabold uppercase tracking-wider text-[#d2f000]">← Back to Explore</Link></div></header>
-    <main className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-7 sm:pt-10">
+    <DiscoveryHeader city={localStorage.getItem('buzzbox:city') || event.city} onCityChange={(city) => localStorage.setItem('buzzbox:city', city)} />
+    <main className="mx-auto max-w-6xl px-4 pb-16 pt-24 sm:px-7 sm:pt-24">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><span className="rounded bg-[#20211a] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-[#d2f000]">{event.category}</span><div className="flex gap-2"><button type="button" onClick={() => setEventSaved(event.id, !saved)} aria-pressed={saved} className="rounded border border-[#303036] px-3 py-2 text-xs hover:border-[#d2f000]">{saved ? '♥ Saved' : '♡ Save'}</button><button type="button" onClick={share} className="rounded border border-[#303036] px-3 py-2 text-xs hover:border-[#d2f000]">↗ Share</button></div></div>
       <div className="grid gap-7 lg:grid-cols-[1.35fr_.8fr]">
         <section><div className="relative overflow-hidden rounded border border-[#22222b] bg-[#1b1b1f]"><img src={event.image} alt={event.title} className="aspect-[16/9] w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-t from-[#0e0e12]/90 via-transparent to-transparent"/><div className="absolute inset-x-0 bottom-0 p-5 sm:p-8"><p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-[#d2f000]">{event.category} · {event.city}</p><h1 className="max-w-3xl font-[Epilogue] text-3xl font-extrabold uppercase leading-tight sm:text-5xl">{event.title}</h1></div></div>

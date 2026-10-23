@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import buzzboxLogo from '../../../BUZZ BOX LOGO.png'
 import Button from './Button.jsx'
 import { tw } from '../styles/tailwind.js'
 import { demoCredentials, demoSessionKey } from '../data/demoCredentials.js'
+import { useAuth } from '../hooks/useAuthContext.js'
 
 function Field({ id, label, type = 'text', placeholder, autoComplete, minLength, action, onAction, optional = false, value, onChange }) {
   const [showPassword, setShowPassword] = useState(false)
@@ -28,6 +29,8 @@ function SocialButtons() {
 
 export default function AuthForm({ mode }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
   const isSignup = mode === 'signup'
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -71,7 +74,8 @@ export default function AuthForm({ mode }) {
       }
       // Temporary demo-session flag only; never store the password.
       window.sessionStorage.setItem(demoSessionKey, 'active')
-      navigate('/explore')
+      login({ name: 'Maya Sharma', email: formData.get('email') })
+      navigate(location?.state?.from || '/explore', { replace: true })
       return
     }
 

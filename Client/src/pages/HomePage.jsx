@@ -34,7 +34,7 @@ export default function HomePage() {
   const location = useLocation()
   const [activeCategory, setActiveCategory] = useState(() => sessionStorage.getItem('buzzbox:category') || 'ALL')
   const [appliedSearch, setAppliedSearch] = useState(null)
-  const [selectedCity, setSelectedCity] = useState('Delhi NCR')
+  const [selectedCity, setSelectedCity] = useState(() => localStorage.getItem('buzzbox:city') || 'Delhi NCR')
   const [notice, setNotice] = useState('')
   useEffect(() => {
     const savedCategory = sessionStorage.getItem('buzzbox:category') || 'ALL'
@@ -43,6 +43,7 @@ export default function HomePage() {
     requestAnimationFrame(() => window.scrollTo(0, Number.isFinite(targetScroll) ? targetScroll : 0))
   }, [location.key])
   useEffect(() => { sessionStorage.setItem('buzzbox:category', activeCategory) }, [activeCategory])
+  useEffect(() => { localStorage.setItem('buzzbox:city', selectedCity) }, [selectedCity])
   const filteredEvents = useMemo(() => events.filter((event) => {
     const categoryMatch = activeCategory === 'ALL' || (activeCategory === 'TONIGHT' ? eventMatchesDate(event, 'Tonight') : event.categories.includes(activeCategory))
     const cityMatch = selectedCity === allCitiesOption || event.city === selectedCity
