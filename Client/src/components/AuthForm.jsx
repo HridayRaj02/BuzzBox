@@ -123,7 +123,6 @@ export default function AuthForm({ mode }) {
       {showResetInfo && <p className="mt-2 border-l-2 border-[#dfff00] bg-[#232520] p-2 text-[10px] leading-5 text-[#e9edc6]" role="status">Password reset is not set up yet. Please contact BuzzBox support.</p>}
       {notice && <p className={`${tw.notice} ${notice.type === 'error' ? 'border-[#ff534a] bg-[#281b1c] text-[#ffd2ce]' : 'border-[#dfff00] bg-[#232520] text-[#e9edc6]'}`} role="status">{notice.message}</p>}
 
-      {!isSignup && <button className="mt-2.5 flex w-full items-center gap-2 border border-[#38383e] bg-[#1d1d22] p-2.5 text-left text-[8px] tracking-[.06em] text-[#d9d8d1]" type="button" onClick={() => setNotice({ type: 'error', message: 'Truecaller autofill needs its mobile provider SDK.' })}><span className="text-sm text-[#dfff00]">✓</span><b>1-TAP TRUECALLER INSTANT</b><small className="ml-auto text-[7px] tracking-[.13em] text-[#a9a99e]">AUTO FILL</small></button>}
       <div className="my-3 flex items-center gap-2.5 text-[8px] font-extrabold tracking-[.14em] text-[#77776f]"><span className="h-px flex-1 bg-[#333339]" />OR CONTINUE WITH<span className="h-px flex-1 bg-[#333339]" /></div>
       <SocialButtons />
       {!isSignup && <button className="mt-3.5 block w-full text-center text-[8px] font-extrabold tracking-[.07em] text-[#dfff00]" type="button" onClick={() => setNotice({ type: 'error', message: 'Pass recovery by phone will be available once SMS sign-in is configured.' })}>↳ &nbsp; LOST TICKET LINK? RETRIEVE PASS WITH PHONE</button>}

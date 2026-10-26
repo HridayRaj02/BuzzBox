@@ -3,12 +3,12 @@ import buzzboxLogo from '../../../../BUZZ BOX LOGO.png'
 import CityDropdown from './CityDropdown.jsx'
 import { useAuth } from '../../hooks/useAuthContext.js'
 
-const links = [['Explore', '/explore'], ['Events', '/explore#radar'], ['Experiences', '/explore#experiences'], ['Radar', '/explore#nearby'], ['Profile', '/profile']]
+const links = [['Explore', '/explore'], ['Events', '/radar'], ['Experiences', '/experience'], ['Radar', '/radar'], ['Profile', '/profile']]
 
 export default function DiscoveryHeader({ city, onCityChange }) {
   const location = useLocation()
   const { user } = useAuth()
-  const active = location.pathname === '/profile' ? 'Profile' : 'Explore'
+  const active = location.pathname.startsWith('/profile') ? 'Profile' : location.pathname === '/experience' ? 'Experiences' : location.pathname === '/radar' ? 'Radar' : 'Explore'
   return <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-[#131317]/95 shadow-[0_1px_8px_rgba(0,0,0,.4)] backdrop-blur-xl">
     <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-7 lg:h-20 lg:px-12">
       <div className="flex min-w-0 items-center gap-4 lg:gap-9">

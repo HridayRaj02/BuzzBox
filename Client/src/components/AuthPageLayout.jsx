@@ -8,7 +8,7 @@ const events = [
   { place: 'DHAN MILL COMPOUND', name: 'Neon Ambient Session', detail: 'INVITE ONLY PASS', active: true },
 ]
 
-function EventShowcase() {
+function EventShowcase({ hideMoney }) {
   return (
     <section className="flex min-w-0 flex-col justify-between py-1 sm:py-4">
       <div>
@@ -26,7 +26,7 @@ function EventShowcase() {
           {events.map((event) => <article className={tw.eventCard} key={event.name}>
             <div className={tw.eventLabel}>{event.place}<span className={`size-1.5 rounded-full ${event.urgent ? 'bg-[#ff534a]' : 'bg-[#dfff00]'}`} /></div>
             <h2 className={tw.eventTitle}>{event.name}</h2>
-            <p className={tw.eventDetail}>{event.detail}</p>
+            <p className={tw.eventDetail}>{hideMoney ? event.name === 'Subverse Modular IV' ? 'CURATED ACCESS · TONIGHT' : event.name === 'Vinyl Wax & Dub Club' ? 'LIVE IN THE CITY' : event.detail : event.detail}</p>
           </article>)}
         </div>
       </div>
@@ -41,7 +41,7 @@ function EventShowcase() {
   )
 }
 
-export default function AuthPageLayout({ children }) {
+export default function AuthPageLayout({ children, hideMoney = false }) {
   return (
     <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#101014] text-[#f3f2eb] [background-image:radial-gradient(ellipse_50%_42%_at_48%_42%,#17171d_0%,#101014_76%)]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-30 [background-image:radial-gradient(#393940_1px,transparent_1px)] [background-size:23px_23px]" />
@@ -51,7 +51,7 @@ export default function AuthPageLayout({ children }) {
         <div className="rounded border border-[#35353a] bg-[#19191d] px-2.5 py-2 text-[8px] font-extrabold tracking-[.13em] text-[#aaa99f] sm:px-3"><span className="mr-2 inline-block size-1.5 rounded-full bg-[#dfff00]" />NODE 01 ACTIVE</div>
       </header>
       <main className="mx-auto grid w-[calc(100%-2rem)] max-w-[1270px] flex-1 grid-cols-1 content-center items-center gap-7 py-7 sm:w-[calc(100%-3.5rem)] sm:py-9 lg:grid-cols-[minmax(0,1fr)_425px] lg:gap-[68px] lg:py-8">
-        <EventShowcase />
+        <EventShowcase hideMoney={hideMoney} />
         {children}
       </main>
       <footer className="mx-auto flex min-h-[60px] w-full max-w-[1440px] flex-wrap items-center justify-center gap-3 border-t border-white/5 px-[18px] py-3 text-center text-[8px] font-bold tracking-[.12em] text-[#77776f] sm:justify-between sm:px-7 xl:px-[50px]">
