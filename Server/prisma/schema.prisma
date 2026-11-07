@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +5,288 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum EventCategory {
+  MUSIC
+  RAVE
+  CLUBS
+  COMEDY
+  FESTIVALS
+  LIVE_SHOWS
+  ART_CULTURE
+  EXPERIENCES
+  AFTER_HOURS
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  SOLD_OUT
+  CANCELLED
+  ENDED
+}
+
+enum EventVisibility {
+  PUBLIC
+  UNLISTED
+  INVITE_ONLY
+}
+
+enum TicketTierType {
+  EARLY_BIRD
+  GENERAL
+  VIP
+  TABLE
+  FREE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+}
+
+enum WaitlistStatus {
+  ACTIVE
+  OFFERED
+  CONVERTED
+  RELEASED
+  EXPIRED
+}
+
+enum UserRole {
+  USER
+  HOST
+  ADMIN
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String
+  handle          String          @unique
+  email           String?         @unique
+  phone           String?         @unique
+  photoUrl        String?
+  role            UserRole        @default(USER)
+  cityId          String?
+  city            City?           @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  hostedEvents    Event[]
+  bookings        Booking[]
+  savedEvents     SavedEvent[]
+  waitlistEntries WaitlistEntry[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model City {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  slug     String  @unique
+  state    String?
+  country  String  @default("India")
+  isActive Boolean @default(true)
+  users    User[]
+  venues   Venue[]
+  events   Event[]
+}
+
+model Venue {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  address     String
+  area        String?
+  cityId      String
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  latitude    Float?
+  longitude   Float?
+  capacity    Int?
+  coverImage  String?
+  isSecret    Boolean  @default(false)
+  events      Event[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([cityId])
+  @@index([latitude, longitude])
+}
+
+model Event {
+  id              String          @id @default(cuid())
+  slug            String          @unique
+  title           String
+  subtitle        String?
+  description     String
+  category        EventCategory
+  status          EventStatus     @default(DRAFT)
+  visibility      EventVisibility @default(PUBLIC)
+  startsAt        DateTime
+  endsAt          DateTime?
+  doorsOpenAt     DateTime?
+  timezone        String          @default("Asia/Kolkata")
+  venueId         String
+  venue           Venue           @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  cityId          String
+  city            City            @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  coverImage      String
+  ageLimit        Int?            @default(18)
+  dressCode       String?
+  entryMethod     String?
+  maxCapacity     Int?
+  isFeatured      Boolean         @default(false)
+  isFree          Boolean         @default(false)
+  startingPrice   Int?
+  hostId          String
+  host            User            @relation(fields: [hostId], references: [id], onDelete: Restrict)
+  images          EventImage[]
+  rules           EventRule[]
+  tags            Tag[]
+  artists         EventArtist[]
+  ticketTiers     TicketTier[]
+  bookings        Booking[]
+  savedBy         SavedEvent[]
+  waitlistEntries WaitlistEntry[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([category])
+  @@index([status, startsAt])
+  @@index([cityId, startsAt])
+  @@index([venueId])
+  @@index([hostId])
+  @@index([isFeatured])
+}
+
+model EventImage {
+  id       String  @id @default(cuid())
+  eventId  String
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  url      String
+  altText  String?
+  position Int     @default(0)
+}
+
+model EventRule {
+  id       String  @id @default(cuid())
+  eventId  String
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title    String
+  detail   String?
+  icon     String?
+  position Int     @default(0)
+}
+
+model Tag {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  slug   String  @unique
+  events Event[]
+}
+
+model Artist {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String        @unique
+  bio       String?
+  photoUrl  String?
+  genre     String?
+  instagram String?
+  events    EventArtist[]
+}
+
+model EventArtist {
+  eventId  String
+  artistId String
+  event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist   Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  role     String?
+  stage    String?
+  setStart DateTime?
+  setEnd   DateTime?
+  position Int       @default(0)
+
+  @@id([eventId, artistId])
+}
+
+model TicketTier {
+  id           String         @id @default(cuid())
+  eventId      String
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name         String
+  type         TicketTierType
+  description  String?
+  price        Int
+  currency     String         @default("INR")
+  quantity     Int
+  sold         Int            @default(0)
+  maxPerOrder  Int            @default(6)
+  salesStart   DateTime?
+  salesEnd     DateTime?
+  isActive     Boolean        @default(true)
+  position     Int            @default(0)
+  bookingItems BookingItem[]
+
+  @@unique([eventId, name])
+  @@index([eventId])
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  reference   String        @unique
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  eventId     String
+  event       Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  status      BookingStatus @default(PENDING)
+  totalAmount Int
+  currency    String        @default("INR")
+  paymentRef  String?
+  qrToken     String?       @unique
+  checkedInAt DateTime?
+  items       BookingItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([eventId, status])
+}
+
+model BookingItem {
+  id        String     @id @default(cuid())
+  bookingId String
+  booking   Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tierId    String
+  tier      TicketTier @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  quantity  Int
+  unitPrice Int
+}
+
+model SavedEvent {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, eventId])
+}
+
+model WaitlistEntry {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  position  Int
+  status    WaitlistStatus @default(ACTIVE)
+  autoBuy   Boolean        @default(false)
+  offeredAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime       @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId, status, position])
 }

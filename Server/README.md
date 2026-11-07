@@ -8,10 +8,13 @@ Express API for account creation and sign-in, backed by PostgreSQL.
 2. Copy `.env.example` to `.env` and set `DATABASE_URL` to your database connection string.
 3. Replace `SESSION_SECRET` with a random value of at least 32 characters. For example, generate one with `openssl rand -hex 32`.
 4. Install dependencies with `npm install`.
-5. Run `npm run db:migrate` to create the `users` table and Prisma migration history.
-6. Start the API with `npm run dev` while developing or `npm start` to run it normally. It listens on port 2222 by default.
+5. Run `npm run db:migrate -- --name init` to create the event and account tables and apply the initial migration.
+6. Run `npm run db:seed` to insert the sample cities, venues, host, artists, tags, events, rules, and ticket tiers.
+7. Start the API with `npm run dev` while developing or `npm start` to run it normally. It listens on port 2222 by default.
 
-Apply the Prisma migration before starting account sign-up. The API checks for a working PostgreSQL connection and the `users` table at startup; it does not modify the database schema itself.
+Prisma 7 reads the database URL through `prisma7.config.ts`; generated client code is written to `generated/prisma`. The typed event data-access functions are in `lib/events.ts`. Apply migrations before starting account sign-up. The API checks for a working PostgreSQL connection and the `users` table at startup; it does not modify the database schema itself.
+
+The checked-in initial SQL migration was generated from the Prisma schema and does not require a database connection. For a new local database, copy `.env.example` to `.env`, set `DATABASE_URL`, then run `npm run db:migrate -- --name init` and `npm run db:seed`.
 
 ## Endpoints
 
