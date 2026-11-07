@@ -7,6 +7,7 @@ import CheckoutPage from './pages/CheckoutPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import ExperiencePage from './pages/ExperiencePage.jsx'
 import RadarPage from './pages/RadarPage.jsx'
+import EventsPage from './pages/EventsPage.jsx'
 import { AuthProvider } from './hooks/useAuth.jsx'
 import { useAuth } from './hooks/useAuthContext.js'
 import { useScrollToTop } from './hooks/useScrollToTop.js'
@@ -24,6 +25,7 @@ function RouteViews() {
     <Route path="/explore" element={<HomePage />} />
     <Route path="/experience" element={<ExperiencePage />} />
     <Route path="/radar" element={<RadarPage />} />
+    <Route path="/events" element={<EventsPage />} />
     <Route path="/events/:eventId" element={<EventDetailsPage />} />
     <Route path="/checkout/:eventId" element={<CheckoutPage />} />
     <Route path="/login" element={<LoginPage />} />
