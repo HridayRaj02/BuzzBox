@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { BookingStatus, EventCategory, EventStatus, EventVisibility, Prisma } from "../generated/prisma/client";
 import { prisma } from "./prisma";
 
+export { EventCategory };
+
 export type EventListOptions = {
   cityId?: string;
   category?: EventCategory;
@@ -10,6 +12,13 @@ export type EventListOptions = {
   cursor?: string;
   limit?: number;
 };
+
+function matchingCategories(search: string): EventCategory[] {
+  const normalizedSearch = search.toLowerCase().replace(/[_\s-]+/g, " ");
+  return Object.values(EventCategory).filter((category) =>
+    category.toLowerCase().replace(/_/g, " ").includes(normalizedSearch),
+  );
+}
 
 export type BookingRequestItem = { tierId: string; quantity: number };
 export type BookingErrorCode = "INVALID_QUANTITY" | "TIER_UNAVAILABLE" | "MAX_PER_ORDER" | "EVENT_UNAVAILABLE";
@@ -33,6 +42,7 @@ function dateWindow(when: EventListOptions["when"]): { gte?: Date; lt?: Date } {
 
 export async function listEvents(options: EventListOptions = {}) {
   const search = options.search?.trim();
+  const categoryMatches = search ? matchingCategories(search) : [];
   return prisma.event.findMany({
     where: {
       status: EventStatus.PUBLISHED,
@@ -42,8 +52,11 @@ export async function listEvents(options: EventListOptions = {}) {
       startsAt: dateWindow(options.when),
       ...(search ? { OR: [
         { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { city: { name: { contains: search, mode: "insensitive" } } },
         { venue: { name: { contains: search, mode: "insensitive" } } },
         { tags: { some: { name: { contains: search, mode: "insensitive" } } } },
+        ...(categoryMatches.length ? [{ category: { in: categoryMatches } }] : []),
       ] } : {}),
     },
     include: { venue: true, city: true, tags: true },
