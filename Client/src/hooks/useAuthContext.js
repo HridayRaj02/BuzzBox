@@ -1,3 +1,4 @@
+// Keeps consumers independent from the AuthProvider implementation.
 import { createContext, useContext } from 'react'
 
 export const AuthContext = createContext(null)

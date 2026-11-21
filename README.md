@@ -17,7 +17,7 @@
 
 BuzzBox is a discovery and ticketing experience for India's underground nightlife and culture: warehouse raves, intimate listening rooms, comedy, festivals, clubs, and curated live events. It pairs a neon-on-dark React interface with an Express + PostgreSQL backend built around a rich event, venue, ticket, booking, and waitlist data model.
 
-> **Status:** The UI currently uses local demo event data for its discovery and booking preview. The backend independently exposes a database-backed events-listing API and has data-access functions ready for bookings, saved events, related events, and waitlists.
+> **Status:** The client is connected to the Express API and local PostgreSQL database. Live events, account sessions, saved events, waitlists, profile preferences, and reservations persist in the database.
 
 ## ✦ Highlights
 
@@ -117,15 +117,18 @@ BuzzBox/
 ├── Client/
 │   ├── src/
 │   │   ├── components/     # Reusable UI and discovery components
-│   │   ├── data/           # Demo events, cities, and demo credentials
+│   │   ├── data/           # UI-only city, profile, and editorial-vibe configuration
 │   │   ├── hooks/          # Auth and navigation hooks
+│   │   ├── lib/            # API client and server-data mappers
 │   │   ├── pages/          # Explore, radar, event, checkout, profile, auth views
 │   │   └── utils/          # Event calculations and tests
 │   └── vite.config.js      # Vite config and API proxy
 └── Server/
-    ├── lib/                # Prisma client and event/booking data access
+    ├── controllers/        # HTTP request/response handling
+    ├── routes/             # URL-to-controller mappings
+    ├── lib/                # Prisma client plus auth/event domain logic
     ├── prisma/             # Schema, migrations, and seed data
-    ├── index.js            # Express entry point and HTTP routes
+    ├── index.js            # Express app setup and route mounting
     └── prisma7.config.ts   # Prisma configuration
 ```
 
@@ -144,10 +147,54 @@ npm test
 npm run db:validate
 ```
 
+## 🔐 Google sign-in
+
+Google authentication is implemented with Passport and OAuth 2.0. Phone OTP and Apple sign-in have been removed from the login page. Create a Google OAuth web client, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_CALLBACK_URL` in `Server/.env`, then use the callback URL `http://localhost:2222/api/auth/google/callback` during local development. Until those Google credentials are configured, the Google button safely reports that sign-in is unavailable. See [`Server/README.md`](./Server/README.md) for the complete setup.
+
+## 🗄️ Check saved user data
+
+The app saves accounts, login sessions, saved events, waitlist entries, and bookings in the local `buzzbox` PostgreSQL database. After starting PostgreSQL and the API, use either pgAdmin or the terminal to inspect it.
+
+### pgAdmin connection
+
+Register a server with these local-development values:
+
+| Field | Value |
+| :-- | :-- |
+| Host name/address | `127.0.0.1` |
+| Port | `5432` |
+| Maintenance database | `postgres` |
+| Username | `hridayrajsinghkrishnawat` |
+| Database to browse | `buzzbox` |
+
+The PostgreSQL server and port must match the `DATABASE_URL` in `Server/.env`. In pgAdmin's **Query Tool**, run the following to confirm that it is connected to the same database as BuzzBox:
+
+```sql
+SELECT current_database(), current_user, inet_server_port();
+```
+
+It should return `buzzbox` as `current_database`. Then view registered users without exposing password hashes:
+
+```sql
+SELECT id, name, email, phone, role, "createdAt"
+FROM "User"
+ORDER BY "createdAt" DESC;
+```
+
+### Terminal alternative
+
+```bash
+cd Server
+psql "$DATABASE_URL"
+```
+
+Then run the same SQL query above. Passwords are intentionally never readable: only salted password hashes are stored.
+
 ## 🧭 Development notes
 
-- The frontend presently imports event listings from `Client/src/data/mockEvents.js`; connecting those screens to `GET /api/events` is the next integration step.
-- The server includes reusable functions for detailed events, related events, saved events, waitlists, and transactional ticket reservations, even though only the events-listing route is registered in `Server/index.js` today.
+- Live event data comes from `/api/events`; files under `Client/src/data/` contain only presentation configuration.
+- Server routes are grouped by system, auth, events, profile, and booking actions. Controllers call reusable domain logic in `Server/lib/`.
+- `.env.example` documents every required environment-variable key; `Server/.env` uses the same keys but holds this machine's local values and must stay uncommitted.
 - Organizer onboarding and several organizer-console controls are intentionally marked as preview/coming soon in the UI.
 
 ## 📜 License

@@ -1,3 +1,4 @@
+// Event domain service: Prisma queries and transactional booking rules.
 import { randomUUID } from "node:crypto";
 import { BookingStatus, EventCategory, EventStatus, EventVisibility, Prisma } from "../generated/prisma/client";
 import { prisma } from "./prisma";

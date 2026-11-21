@@ -1,3 +1,4 @@
+// Small design-system button wrapper that keeps auth screens visually consistent.
 import { tw } from '../styles/tailwind.js'
 
 const variants = {

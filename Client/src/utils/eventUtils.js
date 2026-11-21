@@ -1,3 +1,4 @@
+// Pure event helpers kept independent from React so they are easy to test.
 export function calculateTotal(tiers, quantities) {
   return tiers.reduce((total, tier) => total + tier.price * (quantities[tier.name] || 0), 0)
 }
@@ -11,15 +12,5 @@ export function isEventEnded(event, now = new Date()) {
   return new Date(year, month - 1, day, hours, minutes) < now
 }
 
-export function savedEventIds() {
-  try { return JSON.parse(localStorage.getItem('buzzbox:saved-events') || '[]') } catch { return [] }
-}
-
-export function setEventSaved(id, saved) {
-  const next = new Set(savedEventIds())
-  saved ? next.add(id) : next.delete(id)
-  localStorage.setItem('buzzbox:saved-events', JSON.stringify([...next]))
-  window.dispatchEvent(new Event('buzzbox:saved-events'))
-}
-
+// URL creation stays separate so cards and tests use the same route format.
 export function eventUrl(id) { return `/events/${encodeURIComponent(id)}` }

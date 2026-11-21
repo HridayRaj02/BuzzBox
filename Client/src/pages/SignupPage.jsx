@@ -1,3 +1,4 @@
+// Thin route component for the registration form.
 import AuthForm from '../components/AuthForm.jsx'
 import AuthPageLayout from '../components/AuthPageLayout.jsx'
 

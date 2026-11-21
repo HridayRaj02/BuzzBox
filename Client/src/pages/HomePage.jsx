@@ -1,10 +1,12 @@
+// Discovery page: fetches live events, then applies client-side UI filters.
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import DiscoveryHeader from '../components/home/DiscoveryHeader.jsx'
 import EventCard from '../components/home/EventCard.jsx'
-import { categories, events, eventMatchesDate, vibeTiles } from '../data/mockEvents.js'
+import { eventCategories, eventMatchesDate, vibeTiles } from '../data/exploreContent.js'
 import { allCitiesOption, cityOptions } from '../data/cities.js'
 import CityDropdown from '../components/home/CityDropdown.jsx'
+import { api, mapEvent } from '../lib/api.js'
 
 const dates = ['Tonight', 'This Weekend', 'Next Week', 'All Dates']
 const nearby = [
@@ -32,18 +34,26 @@ function SearchPanel({ onSearch, city, onCityChange }) {
 
 export default function HomePage({ page = 'explore' }) {
   const location = useLocation()
+  const restoreScroll = location.state?.scrollY
   const [activeCategory, setActiveCategory] = useState(() => sessionStorage.getItem('buzzbox:category') || 'ALL')
   const [appliedSearch, setAppliedSearch] = useState(null)
   const [selectedCity, setSelectedCity] = useState(() => localStorage.getItem('buzzbox:city') || 'Delhi NCR')
   const [notice, setNotice] = useState('')
+  const [events, setEvents] = useState([])
+  const [eventsError, setEventsError] = useState('')
   useEffect(() => {
     const savedCategory = sessionStorage.getItem('buzzbox:category') || 'ALL'
-    setActiveCategory(savedCategory)
-    const targetScroll = page === 'explore' ? location.state?.scrollY ?? Number(sessionStorage.getItem('buzzbox:explore-scroll') || 0) : 0
+    queueMicrotask(() => setActiveCategory(savedCategory))
+    const targetScroll = page === 'explore' ? restoreScroll ?? Number(sessionStorage.getItem('buzzbox:explore-scroll') || 0) : 0
     requestAnimationFrame(() => window.scrollTo(0, Number.isFinite(targetScroll) ? targetScroll : 0))
-  }, [location.key, page])
+  }, [location.key, page, restoreScroll])
   useEffect(() => { sessionStorage.setItem('buzzbox:category', activeCategory) }, [activeCategory])
   useEffect(() => { localStorage.setItem('buzzbox:city', selectedCity) }, [selectedCity])
+  useEffect(() => {
+    let cancelled = false
+    api('/api/events?limit=100').then((data) => { if (!cancelled) setEvents(data.map(mapEvent)) }).catch(() => { if (!cancelled) setEventsError('Live events are unavailable right now. Please make sure the API and database are running.') })
+    return () => { cancelled = true }
+  }, [])
   const filteredEvents = useMemo(() => events.filter((event) => {
     const categoryMatch = activeCategory === 'ALL' || (activeCategory === 'TONIGHT' ? eventMatchesDate(event, 'Tonight') : event.categories.includes(activeCategory))
     const cityMatch = selectedCity === allCitiesOption || event.city === selectedCity
@@ -51,7 +61,7 @@ export default function HomePage({ page = 'explore' }) {
     const searchableText = `${event.title} ${event.category} ${event.categories.join(' ')} ${event.venue} ${event.city} ${event.description}`.toLowerCase()
     const queryMatch = !appliedSearch?.query.trim() || searchableText.includes(appliedSearch.query.trim().toLowerCase())
     return categoryMatch && cityMatch && dateMatch && queryMatch
-  }), [activeCategory, appliedSearch, selectedCity])
+  }), [activeCategory, appliedSearch, events, selectedCity])
   const radarResults = appliedSearch ? filteredEvents : filteredEvents.filter((event) => !eventMatchesDate(event, 'This Weekend'))
   const weekendResults = filteredEvents.filter((event) => eventMatchesDate(event, 'This Weekend'))
   const showPreviewNotice = (event) => { setNotice(`${event.title}: event details and booking will be available when BuzzBox ticketing is connected.`); window.setTimeout(() => setNotice(''), 4200) }
@@ -65,16 +75,16 @@ export default function HomePage({ page = 'explore' }) {
         {appliedSearch && <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-[#c6c9ab]" role="status"><span>Showing {appliedSearch.date.toLowerCase()} events in {selectedCity}{appliedSearch.query.trim() ? ` matching “${appliedSearch.query.trim()}”` : ''}.</span><button type="button" onClick={() => { setAppliedSearch(null); setActiveCategory('ALL') }} className="font-extrabold uppercase tracking-wider text-[#d2f000]">Clear search ×</button></div>}
       </section>
 
-      <section aria-label="Event categories" className="mb-8 flex gap-2 overflow-x-auto pb-2">{categories.map((category) => <button key={category} type="button" onClick={() => setActiveCategory(category)} aria-pressed={activeCategory === category} className={`shrink-0 rounded-full px-3.5 py-2 text-[9px] font-extrabold uppercase tracking-wider transition ${activeCategory === category ? 'bg-[#d2f000] text-[#2c3400]' : 'border border-[#22222b] bg-[#1f1f23] text-[#c6c9ab] hover:bg-[#2a292e] hover:text-white'}`}>{category}</button>)}</section>
+      <section aria-label="Event categories" className="mb-8 flex gap-2 overflow-x-auto pb-2">{eventCategories.map((category) => <button key={category} type="button" onClick={() => setActiveCategory(category)} aria-pressed={activeCategory === category} className={`shrink-0 rounded-full px-3.5 py-2 text-[9px] font-extrabold uppercase tracking-wider transition ${activeCategory === category ? 'bg-[#d2f000] text-[#2c3400]' : 'border border-[#22222b] bg-[#1f1f23] text-[#c6c9ab] hover:bg-[#2a292e] hover:text-white'}`}>{category}</button>)}</section>
 
       <section className="mb-10">
         <SectionHeading id="radar" eyebrow={appliedSearch ? '◉ Filtered radar' : '◉ Live radar'} title={appliedSearch ? 'Search results' : 'Live on the radar'} description={appliedSearch ? 'Events matching your selected city, date, category, and keywords.' : "What's happening around the city right now."} />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{radarResults.map((event) => <EventCard key={event.id} event={event} featured />)}</div>
-        {!filteredEvents.length && <p className="rounded border border-[#22222b] bg-[#1b1b1f] p-6 text-sm text-[#c6c9ab]">No events match these filters. Try another city, date, category, or keyword.</p>}
+        {!filteredEvents.length && <p className="rounded border border-[#22222b] bg-[#1b1b1f] p-6 text-sm text-[#c6c9ab]">{eventsError || 'No events match these filters. Try another city, date, category, or keyword.'}</p>}
       </section>
       </>}
 
-      {page === 'experience' && <section className="mb-10" id="experiences"><SectionHeading eyebrow="Curated aesthetics" title="What's your vibe?"/><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{vibeTiles.map(([title, subtitle, image]) => <button type="button" key={title} onClick={() => { setActiveCategory(title.includes('Funny') ? 'COMEDY' : title.includes('Art') ? 'ART & CULTURE' : title.includes('Loud') ? 'RAVE' : title.includes('Dance') ? 'CLUBS' : 'MUSIC'); sessionStorage.setItem('buzzbox:category', title.includes('Funny') ? 'COMEDY' : title.includes('Art') ? 'ART & CULTURE' : title.includes('Loud') ? 'RAVE' : title.includes('Dance') ? 'CLUBS' : 'MUSIC') }} className="group relative flex h-44 items-end overflow-hidden rounded bg-[#1f1f23] p-3 text-left sm:h-56"><img src={image} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-110"/><span className="absolute inset-0 bg-gradient-to-t from-[#0e0e12] via-[#0e0e12]/40 to-transparent"/><span className="relative"><b className="block font-[Epilogue] text-xs font-extrabold uppercase leading-tight group-hover:text-[#d2f000] sm:text-sm">{title}</b><small className="mt-1 block text-[8px] uppercase tracking-wider text-[#c6c9ab]">{subtitle}</small></span></button>)}</div></section>}
+      {page === 'experience' && <section className="mb-10" id="experiences"><SectionHeading eyebrow="Curated aesthetics" title="What's your vibe?"/><div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">{vibeTiles.map(({ title, subtitle, category, image }) => <button type="button" key={title} onClick={() => { setActiveCategory(category); sessionStorage.setItem('buzzbox:category', category) }} className="group relative flex h-44 items-end overflow-hidden rounded bg-[#1f1f23] p-3 text-left sm:h-56"><img src={image} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-110"/><span className="absolute inset-0 bg-gradient-to-t from-[#0e0e12] via-[#0e0e12]/40 to-transparent"/><span className="relative"><b className="block font-[Epilogue] text-xs font-extrabold uppercase leading-tight group-hover:text-[#d2f000] sm:text-sm">{title}</b><small className="mt-1 block text-[8px] uppercase tracking-wider text-[#c6c9ab]">{subtitle}</small></span></button>)}</div></section>}
 
       {page === 'events' && <section className="mb-10"><div className="flex items-end justify-between"><SectionHeading eyebrow="Plans worth making" title="This weekend" description="The city's most interesting plans, in one place."/><div className="mb-5 hidden gap-1 sm:flex"><button type="button" aria-label="Previous events" onClick={() => setNotice('You are viewing the first set of weekend picks.')} className="size-9 rounded bg-[#1b1b1f] hover:bg-[#2a292e]">‹</button><button type="button" aria-label="Next events" onClick={() => setNotice('More weekend picks will be added to this preview.')} className="size-9 rounded bg-[#1b1b1f] hover:bg-[#2a292e]">›</button></div></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{weekendResults.map((event) => <EventCard key={event.id} event={event}/>)}</div>{!weekendResults.length && <p className="text-sm text-[#c6c9ab]">No weekend plans match the selected city and category yet.</p>}</section>}
 

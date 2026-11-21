@@ -1,3 +1,4 @@
+// PostgreSQL data model for BuzzBox accounts, events, ticket inventory, and reservations.
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -67,7 +68,9 @@ model User {
   name            String
   handle          String          @unique
   email           String?         @unique
+  googleId        String?         @unique
   phone           String?         @unique
+  passwordHash    String?
   photoUrl        String?
   role            UserRole        @default(USER)
   cityId          String?
@@ -76,8 +79,26 @@ model User {
   bookings        Booking[]
   savedEvents     SavedEvent[]
   waitlistEntries WaitlistEntry[]
+  sessions        Session[]
+  favouriteGenres String[]        @default([])
+  cityPreferences String[]        @default([])
+  whatsappDrops   Boolean         @default(true)
+  radarAlerts     Boolean         @default(true)
+  waitlistOffers  Boolean         @default(true)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model City {

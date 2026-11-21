@@ -1,3 +1,4 @@
+// Central route table and route-level authentication guard.
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import LoginPage from './pages/LoginPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
@@ -13,8 +14,9 @@ import { useAuth } from './hooks/useAuthContext.js'
 import { useScrollToTop } from './hooks/useScrollToTop.js'
 
 function RequireAuth({ children }) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const location = useLocation()
+  if (loading) return <main className="grid min-h-screen place-items-center bg-[#131317] text-sm text-[#c6c9ab]">Checking your session…</main>
   return user ? children : <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />
 }
 

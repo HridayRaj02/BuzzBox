@@ -1,3 +1,4 @@
+// Reusable visual shell around the account forms.
 import buzzboxLogo from '../../../BUZZ BOX LOGO.png'
 import { Link } from 'react-router-dom'
 import { tw } from '../styles/tailwind.js'

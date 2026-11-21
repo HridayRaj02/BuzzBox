@@ -1,14 +1,10 @@
+// Fast unit tests for pure helpers that do not need a browser or database.
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { calculateTotal, eventUrl } from './eventUtils.js'
-import { events } from '../data/mockEvents.js'
 
-test('Explore card destination points to its event id', () => {
-  assert.equal(eventUrl(events[0].id), `/events/${events[0].id}`)
-})
-
-test('unknown event ids do not resolve in the shared event data', () => {
-  assert.equal(events.find((event) => event.id === 'missing-event'), undefined)
+test('event URLs encode an API slug safely', () => {
+  assert.equal(eventUrl('my event'), '/events/my%20event')
 })
 
 test('ticket total sums each tier price times its quantity', () => {

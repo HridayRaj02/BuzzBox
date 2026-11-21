@@ -1,8 +1,16 @@
+// Idempotent local development seed: creates cities, events, venues, artists, and ticket tiers.
 import { PrismaClient, EventCategory, EventStatus, TicketTierType, UserRole } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+
+function upcomingIndiaDate(daysFromNow: number, hour: number) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" })
+    .formatToParts(new Date())
+    .reduce<Record<string, string>>((result, part) => ({ ...result, [part.type]: part.value }), {});
+  return new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + daysFromNow, hour - 5, 30)).toISOString();
+}
 
 async function main() {
   const cities = await Promise.all([
@@ -23,15 +31,15 @@ async function main() {
   const artists = ["DJ Nucleya", "Ritviz", "Maalavika Manoj", "The Local Train", "Aditi Mittal", "Kanan Gill", "Project 91", "Perch Collective", "Midnight Traffic", "Sitar for Mental Health", "Rohan Joshi", "Prateek Kuhad"];
   const artistRecords = await Promise.all(artists.map((name) => { const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); return prisma.artist.upsert({ where: { slug }, update: {}, create: { name, slug } }); }));
   const specs: { title: string; slug: string; category: EventCategory; date: string; venue: number; featured?: boolean; tags: string[] }[] = [
-    { title: "LOW-FI LISTENING CLUB", slug: "low-fi-listening-club", category: EventCategory.MUSIC, date: "2026-10-31T21:00:00+05:30", venue: 0, featured: true, tags: ["Listening", "Electronic"] },
-    { title: "SUB-CIRCUIT 011: WAREHOUSE EDITION", slug: "sub-circuit-011-warehouse-edition", category: EventCategory.RAVE, date: "2026-10-19T21:00:00+05:30", venue: 0, tags: ["Warehouse", "Techno"] },
-    { title: "ROOM SERVICE: DISCO SPECIAL", slug: "room-service-disco-special", category: EventCategory.CLUBS, date: "2026-11-01T22:30:00+05:30", venue: 1, featured: true, tags: ["Disco", "Dance"] },
-    { title: "ODDBALL COMEDY: LATE NIGHT SHOWCASE", slug: "oddball-comedy-late-night-showcase", category: EventCategory.COMEDY, date: "2026-10-19T21:00:00+05:30", venue: 2, tags: ["Stand-up", "Late night"] },
-    { title: "CITY LIGHTS FESTIVAL", slug: "city-lights-festival", category: EventCategory.FESTIVALS, date: "2026-11-14T17:00:00+05:30", venue: 3, tags: ["Festival", "Live"] },
-    { title: "SUNDAY LIVE SESSIONS", slug: "sunday-live-sessions", category: EventCategory.LIVE_SHOWS, date: "2026-11-15T19:00:00+05:30", venue: 1, tags: ["Live music", "Indie"] },
-    { title: "ART AFTER DARK", slug: "art-after-dark", category: EventCategory.ART_CULTURE, date: "2026-11-20T20:00:00+05:30", venue: 4, tags: ["Art", "Culture"] },
-    { title: "ROOFTOP MOON RITUAL", slug: "rooftop-moon-ritual", category: EventCategory.EXPERIENCES, date: "2026-11-21T19:00:00+05:30", venue: 3, tags: ["Rooftop", "Immersive"] },
-    { title: "AFTER HOURS: NO SLEEP CLUB", slug: "after-hours-no-sleep-club", category: EventCategory.AFTER_HOURS, date: "2026-11-22T23:00:00+05:30", venue: 0, tags: ["After hours", "House"] },
+    { title: "LOW-FI LISTENING CLUB", slug: "low-fi-listening-club", category: EventCategory.MUSIC, date: upcomingIndiaDate(1, 21), venue: 0, featured: true, tags: ["Listening", "Electronic"] },
+    { title: "SUB-CIRCUIT 011: WAREHOUSE EDITION", slug: "sub-circuit-011-warehouse-edition", category: EventCategory.RAVE, date: upcomingIndiaDate(2, 21), venue: 0, tags: ["Warehouse", "Techno"] },
+    { title: "ROOM SERVICE: DISCO SPECIAL", slug: "room-service-disco-special", category: EventCategory.CLUBS, date: upcomingIndiaDate(3, 22), venue: 1, featured: true, tags: ["Disco", "Dance"] },
+    { title: "ODDBALL COMEDY: LATE NIGHT SHOWCASE", slug: "oddball-comedy-late-night-showcase", category: EventCategory.COMEDY, date: upcomingIndiaDate(4, 21), venue: 2, tags: ["Stand-up", "Late night"] },
+    { title: "CITY LIGHTS FESTIVAL", slug: "city-lights-festival", category: EventCategory.FESTIVALS, date: upcomingIndiaDate(7, 17), venue: 3, tags: ["Festival", "Live"] },
+    { title: "SUNDAY LIVE SESSIONS", slug: "sunday-live-sessions", category: EventCategory.LIVE_SHOWS, date: upcomingIndiaDate(8, 19), venue: 1, tags: ["Live music", "Indie"] },
+    { title: "ART AFTER DARK", slug: "art-after-dark", category: EventCategory.ART_CULTURE, date: upcomingIndiaDate(10, 20), venue: 4, tags: ["Art", "Culture"] },
+    { title: "ROOFTOP MOON RITUAL", slug: "rooftop-moon-ritual", category: EventCategory.EXPERIENCES, date: upcomingIndiaDate(12, 19), venue: 3, tags: ["Rooftop", "Immersive"] },
+    { title: "AFTER HOURS: NO SLEEP CLUB", slug: "after-hours-no-sleep-club", category: EventCategory.AFTER_HOURS, date: upcomingIndiaDate(13, 23), venue: 0, tags: ["After hours", "House"] },
   ];
   for (const [index, spec] of specs.entries()) {
     const tiers = [

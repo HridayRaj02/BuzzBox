@@ -1,3 +1,4 @@
+// Fixed navigation header shared by all discovery and profile pages.
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import buzzboxLogo from '../../../../BUZZ BOX LOGO.png'
 import CityDropdown from './CityDropdown.jsx'

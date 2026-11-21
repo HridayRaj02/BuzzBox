@@ -1,3 +1,4 @@
+// Lint rules for browser-side JavaScript and React hooks.
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

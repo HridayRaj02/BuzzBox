@@ -1,3 +1,4 @@
+// Restores a predictable scroll position whenever React Router changes screens.
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 

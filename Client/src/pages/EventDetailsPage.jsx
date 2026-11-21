@@ -1,9 +1,11 @@
+// Event detail page: loads one event, lets a user choose tiers, then starts checkout.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { events } from '../data/mockEvents.js'
 import EventCard from '../components/home/EventCard.jsx'
 import DiscoveryHeader from '../components/home/DiscoveryHeader.jsx'
-import { calculateTotal, isEventEnded, savedEventIds, setEventSaved } from '../utils/eventUtils.js'
+import { calculateTotal, isEventEnded } from '../utils/eventUtils.js'
+import { api, ApiError, mapEvent } from '../lib/api.js'
+import { useAuth } from '../hooks/useAuthContext.js'
 
 const money = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
 const dateLabel = (value) => new Date(`${value}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -11,14 +13,32 @@ const dateLabel = (value) => new Date(`${value}T12:00:00`).toLocaleDateString('e
 export default function EventDetailsPage() {
   const { eventId } = useParams()
   const navigate = useNavigate()
-  const event = events.find((item) => item.id === eventId)
+  const { user } = useAuth()
+  const [event, setEvent] = useState(null)
+  const [related, setRelated] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [quantities, setQuantities] = useState({})
-  const [saved, setSaved] = useState(() => savedEventIds().includes(eventId))
+  const [saved, setSaved] = useState(false)
   const [message, setMessage] = useState('')
   const total = useMemo(() => event ? calculateTotal(event.ticketTiers, quantities) : 0, [event, quantities])
   const ended = event ? isEventEnded(event) : false
 
   useEffect(() => { window.scrollTo(0, 0) }, [eventId])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => { setLoading(true); setLoadError(''); setQuantities({}); setSaved(false) })
+    Promise.all([api(`/api/events/${encodeURIComponent(eventId)}`), api('/api/events?limit=100')])
+      .then(([current, all]) => {
+        if (cancelled) return
+        const mapped = mapEvent(current)
+        setEvent(mapped)
+        setRelated(all.map(mapEvent).filter((item) => item.category === mapped.category && item.id !== mapped.id).slice(0, 4))
+      })
+      .catch((error) => { if (!cancelled) setLoadError(error instanceof ApiError && error.status === 404 ? 'This event may have been removed or the link may be incorrect.' : 'Live event details are unavailable right now.') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [eventId])
   useEffect(() => {
     if (!event) return
     document.title = `${event.title} | BUZZBOX`
@@ -27,13 +47,8 @@ export default function EventDetailsPage() {
     description.content = `${event.description} ${event.venue}, ${event.city}.`
     return () => { document.title = 'BuzzBox — Explore the Scene' }
   }, [event])
-  useEffect(() => {
-    const sync = () => setSaved(savedEventIds().includes(eventId))
-    window.addEventListener('buzzbox:saved-events', sync)
-    return () => window.removeEventListener('buzzbox:saved-events', sync)
-  }, [eventId])
-
-  if (!event) return <main className="grid min-h-screen place-items-center bg-[#131317] px-5 text-[#e4e1e7]"><div className="text-center"><p className="mb-2 text-[10px] font-extrabold uppercase tracking-[.2em] text-[#d2f000]">BUZZBOX</p><h1 className="font-[Epilogue] text-3xl font-extrabold uppercase">Event not found</h1><p className="my-4 text-sm text-[#c6c9ab]">This event may have been removed or the link may be incorrect.</p><Link to="/explore" className="inline-flex rounded bg-[#d2f000] px-4 py-3 text-xs font-extrabold uppercase text-[#2c3400]">Back to Explore</Link></div></main>
+  if (loading) return <main className="grid min-h-screen place-items-center bg-[#131317] px-5 text-sm text-[#c6c9ab]">Loading event details…</main>
+  if (!event) return <main className="grid min-h-screen place-items-center bg-[#131317] px-5 text-[#e4e1e7]"><div className="text-center"><p className="mb-2 text-[10px] font-extrabold uppercase tracking-[.2em] text-[#d2f000]">BUZZBOX</p><h1 className="font-[Epilogue] text-3xl font-extrabold uppercase">Event unavailable</h1><p className="my-4 text-sm text-[#c6c9ab]">{loadError}</p><Link to="/explore" className="inline-flex rounded bg-[#d2f000] px-4 py-3 text-xs font-extrabold uppercase text-[#2c3400]">Back to Explore</Link></div></main>
 
   const share = async () => {
     const url = window.location.href
@@ -55,19 +70,16 @@ export default function EventDetailsPage() {
     const anchor = document.createElement('a'); anchor.href = URL.createObjectURL(blob); anchor.download = `${event.id}.ics`; anchor.click(); URL.revokeObjectURL(anchor.href)
   }
   const directions = `https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`
-  const related = useMemo(() => {
-    const candidates = events.filter((item) => item.category === event?.category && item.id !== event?.id)
-    for (let index = candidates.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1))
-      ;[candidates[index], candidates[swapIndex]] = [candidates[swapIndex], candidates[index]]
-    }
-    return candidates.slice(0, 4)
-  }, [eventId])
+  const toggleSaved = async () => {
+    if (!user) { navigate('/login', { state: { from: `/events/${event.id}` } }); return }
+    try { await api(`/api/events/${event.eventId}/saved`, { method: saved ? 'DELETE' : 'PUT' }); setSaved(!saved) }
+    catch (error) { setMessage(error.message || 'Could not update saved events.') }
+  }
 
   return <div className="min-h-screen bg-[#131317] bg-[radial-gradient(rgba(144,147,120,.14)_1px,transparent_1px)] bg-[size:24px_24px] text-[#e4e1e7] selection:bg-[#d2f000] selection:text-[#2c3400]">
     <DiscoveryHeader city={localStorage.getItem('buzzbox:city') || event.city} onCityChange={(city) => localStorage.setItem('buzzbox:city', city)} />
     <main className="mx-auto max-w-6xl px-4 pb-16 pt-24 sm:px-7 sm:pt-24">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><span className="rounded bg-[#20211a] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-[#d2f000]">{event.category}</span><div className="flex gap-2"><button type="button" onClick={() => setEventSaved(event.id, !saved)} aria-pressed={saved} className="rounded border border-[#303036] px-3 py-2 text-xs hover:border-[#d2f000]">{saved ? '♥ Saved' : '♡ Save'}</button><button type="button" onClick={share} className="rounded border border-[#303036] px-3 py-2 text-xs hover:border-[#d2f000]">↗ Share</button></div></div>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><span className="rounded bg-[#20211a] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-[#d2f000]">{event.category}</span><div className="flex gap-2"><button type="button" onClick={toggleSaved} aria-pressed={saved} className="rounded border border-[#303036] px-3 py-2 text-xs hover:border-[#d2f000]">{saved ? '♥ Saved' : '♡ Save'}</button><button type="button" onClick={share} className="rounded border border-[#303036] px-3 py-2 text-xs hover:border-[#d2f000]">↗ Share</button></div></div>
       <div className="grid gap-7 lg:grid-cols-[1.35fr_.8fr]">
         <section><div className="relative overflow-hidden rounded border border-[#22222b] bg-[#1b1b1f]"><img src={event.image} alt={event.title} className="aspect-[16/9] w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-t from-[#0e0e12]/90 via-transparent to-transparent"/><div className="absolute inset-x-0 bottom-0 p-5 sm:p-8"><p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-[#d2f000]">{event.category} · {event.city}</p><h1 className="max-w-3xl font-[Epilogue] text-3xl font-extrabold uppercase leading-tight sm:text-5xl">{event.title}</h1></div></div>
           {ended && <p className="mt-4 rounded border border-[#71413b] bg-[#301f1f] p-3 text-xs font-bold uppercase tracking-wide text-[#ffb4a9]">This event has ended</p>}

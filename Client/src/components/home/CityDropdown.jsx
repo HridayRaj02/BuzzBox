@@ -1,3 +1,4 @@
+// Accessible reusable city selector with outside-click and Escape handling.
 import { useEffect, useRef, useState } from 'react'
 import { cityOptions } from '../../data/cities.js'
 

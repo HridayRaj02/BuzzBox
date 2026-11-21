@@ -1,10 +1,9 @@
+// Personal dashboard: account preferences, saved events, waitlist, and reservations.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import DiscoveryHeader from '../components/home/DiscoveryHeader.jsx'
-import { events } from '../data/mockEvents.js'
 import { useAuth } from '../hooks/useAuthContext.js'
 import { useUser } from '../hooks/useUser.jsx'
-import { savedEventIds, setEventSaved } from '../utils/eventUtils.js'
 
 const card = 'rounded border border-[#25252b] bg-[#1b1b1f]'
 const tinyLabel = 'text-[8px] font-extrabold uppercase tracking-[.16em] text-[#92938b]'
@@ -42,7 +41,7 @@ function PassCard({ event, onOpen }) {
 }
 
 function Waitlist({ items, onOpen, onRelease }) {
-  return <div className="mt-2 border-t border-white/5 pt-2"><div className="mb-1 flex justify-between"><p className={tinyLabel}>ACTIVE STANDBY ALLOCATIONS</p><p className={tinyLabel}>REAL-TIME POOL</p></div>{items.length ? items.map((item) => <div key={item.eventId} className="flex flex-wrap items-center gap-2 rounded-sm bg-[#151519] px-2 py-2"><button onClick={() => onOpen(item.eventId)} className="min-w-0 flex-1 text-left"><p className="text-[9px] font-extrabold uppercase"><span className="mr-1 rounded-sm bg-[#333725] px-1 py-0.5 text-[6px] text-[#d2f000]">Priority Alert</span>{events.find((e) => e.id === item.eventId)?.title || item.label}</p><p className="mt-1 text-[7px] text-[#b6b6ae]">Secret Speakeasy · Tomorrow, 22:00</p><p className="mt-1 text-[7px] font-extrabold uppercase text-[#d2f000]">● Position #{item.position} (high conversion likely)</p></button><button onClick={() => onRelease(item.eventId)} className="rounded-sm border border-[#37373d] px-2 py-1.5 text-[7px] font-extrabold uppercase text-[#aaa9a2]">Release Queue</button></div>) : <p className="py-3 text-[8px] text-[#92938b]">No active waitlist entries.</p>}</div>
+  return <div className="mt-2 border-t border-white/5 pt-2"><div className="mb-1 flex justify-between"><p className={tinyLabel}>ACTIVE STANDBY ALLOCATIONS</p><p className={tinyLabel}>REAL-TIME POOL</p></div>{items.length ? items.map((item) => <div key={item.eventId} className="flex flex-wrap items-center gap-2 rounded-sm bg-[#151519] px-2 py-2"><button onClick={() => onOpen(item.event.id)} className="min-w-0 flex-1 text-left"><p className="text-[9px] font-extrabold uppercase"><span className="mr-1 rounded-sm bg-[#333725] px-1 py-0.5 text-[6px] text-[#d2f000]">Priority Alert</span>{item.event.title}</p><p className="mt-1 text-[7px] text-[#b6b6ae]">{item.event.venue} · {item.event.date}, {item.event.time}</p><p className="mt-1 text-[7px] font-extrabold uppercase text-[#d2f000]">● Position #{item.position}</p></button><button onClick={() => onRelease(item.eventId)} className="rounded-sm border border-[#37373d] px-2 py-1.5 text-[7px] font-extrabold uppercase text-[#aaa9a2]">Release Queue</button></div>) : <p className="py-3 text-[8px] text-[#92938b]">No active waitlist entries.</p>}</div>
 }
 
 function SavedEvents({ items, onOpen, onRemove }) {
@@ -62,32 +61,32 @@ export default function ProfilePage() {
   const { view } = useParams()
   const navigate = useNavigate()
   const { logout } = useAuth()
-  const { user, loading, error, reload, updateUser, updateSetting } = useUser()
-  const [saved, setSaved] = useState(savedEventIds())
+  const { user, loading, error, savedEvents, waitlist, bookings, reload, updateUser, updateSetting, setEventSaved, leaveWaitlist } = useUser()
   const [shareNotice, setShareNotice] = useState('')
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
   useEffect(() => { document.title = 'Profile | BUZZBOX'; return () => { document.title = 'BuzzBox — Explore the Scene' } }, [])
-  useEffect(() => { const sync = () => setSaved(savedEventIds()); window.addEventListener('buzzbox:saved-events', sync); window.addEventListener('storage', sync); return () => { window.removeEventListener('buzzbox:saved-events', sync); window.removeEventListener('storage', sync) } }, [])
   if (loading) return <PageFrame><div className="py-16 text-center text-xs text-[#c6c9ab]">Loading profile telemetry…</div></PageFrame>
   if (error || !user) return <PageFrame><div className="py-16 text-center"><p className="text-xs">Profile data unavailable.</p><button onClick={reload} className="mt-3 text-[9px] font-bold uppercase text-[#d2f000]">Retry</button></div></PageFrame>
-  const visibleSaved = events.filter((event) => saved.includes(event.id))
+  const visibleSaved = savedEvents
   const openEvent = (id) => navigate(`/events/${id}`)
   const share = async () => { const url = `${window.location.origin}/u/${user.handle}`; try { if (navigator.share) await navigator.share({ title: `${user.name} on BUZZBOX`, url }); else { await navigator.clipboard.writeText(url); setShareNotice('Public Taste Card URL copied to clipboard.') } } catch (e) { if (e.name !== 'AbortError') setShareNotice('Could not share Taste Card.') } }
-  const releaseWaitlist = (id) => { if (window.confirm('Release your place in this queue?')) updateUser({ waitlist: user.waitlist.filter((item) => item.eventId !== id) }) }
+  const activePass = bookings[0]?.event || null
+  const releaseWaitlist = (id) => { if (window.confirm('Release your place in this queue?')) leaveWaitlist(id) }
   const header = <DiscoveryHeader city={user.city} onCityChange={(city) => updateUser({ city })}/>
   if (view === 'edit') return <PageFrame header={header}><h1 className="mb-4 font-[Epilogue] text-xl font-extrabold uppercase">Edit Profile</h1><form onSubmit={(e) => { e.preventDefault(); updateUser({ name: name || user.name, handle: handle || user.handle }); navigate('/profile') }} className={`${card} p-4`}><label className="block text-xs">Name<input className="mt-2 block w-full rounded bg-[#0e0e12] p-3" value={name || user.name} onChange={(e) => setName(e.target.value)}/></label><label className="mt-4 block text-xs">Handle<input className="mt-2 block w-full rounded bg-[#0e0e12] p-3" value={handle || user.handle} onChange={(e) => setHandle(e.target.value)}/></label><button className="mt-5 rounded bg-[#d2f000] px-4 py-2.5 text-[9px] font-extrabold uppercase text-[#2c3400]">Save Changes</button></form></PageFrame>
-  if (view === 'saved') return <PageFrame header={header}><div className="mb-4 flex justify-between"><h1 className="font-[Epilogue] text-xl font-extrabold uppercase">Saved Events &amp; Wishlist</h1><Link to="/profile" className="text-[9px] font-bold uppercase text-[#d2f000]">← Profile</Link></div><SavedEvents items={visibleSaved} onOpen={openEvent} onRemove={(id) => setEventSaved(id, false)}/></PageFrame>
+  const removeSaved = (id) => { const event = visibleSaved.find((item) => item.id === id); if (event) setEventSaved(event.eventId, false) }
+  if (view === 'saved') return <PageFrame header={header}><div className="mb-4 flex justify-between"><h1 className="font-[Epilogue] text-xl font-extrabold uppercase">Saved Events &amp; Wishlist</h1><Link to="/profile" className="text-[9px] font-bold uppercase text-[#d2f000]">← Profile</Link></div><SavedEvents items={visibleSaved} onOpen={openEvent} onRemove={removeSaved}/></PageFrame>
   if (view === 'audit') return <PageFrame header={header}><h1 className="font-[Epilogue] text-xl font-extrabold uppercase">Security Audit Log</h1><p className="mt-3 text-xs text-[#c6c9ab]">Your account vault is active. No recent security events to report.</p></PageFrame>
-  if (view === 'pass') return <PageFrame header={header}><h1 className="mb-3 font-[Epilogue] text-xl font-extrabold uppercase">Active Digital Pass</h1><PassCard event={events.find((event) => event.id === user.activePass)} onOpen={openEvent}/></PageFrame>
+  if (view === 'pass') return <PageFrame header={header}><h1 className="mb-3 font-[Epilogue] text-xl font-extrabold uppercase">Active Digital Pass</h1><PassCard event={activePass} onOpen={openEvent}/></PageFrame>
 
   return <div className="min-h-screen bg-[#111114] text-[#e4e1e7]">{header}<main className="mx-auto max-w-[1180px] space-y-3 px-3 pb-10 pt-[88px] sm:px-5 lg:px-7 lg:pt-[96px]">
     <TasteCard user={user} onShare={share} onEdit={() => navigate('/profile/edit')}/>
     <div className="grid items-start gap-3 lg:grid-cols-[1.2fr_.8fr]">
       <div className="space-y-3">
         <Panel title="BUZZBOX Cultural Index" icon="▣" meta="Qualitative curation ledger // S: R/F: 94.4%"><CulturalIndex user={user}/></Panel>
-        <Panel title="Active Digital Pass" icon="▣" meta="● Valid tonight" action={<button onClick={() => navigate('/profile/pass')} className="rounded-full bg-[#292b21] px-2 py-1 text-[7px] font-extrabold uppercase text-[#d2f000]">Valid Tonight</button>}><PassCard event={events.find((event) => event.id === user.activePass)} onOpen={openEvent}/><Waitlist items={user.waitlist} onOpen={openEvent} onRelease={releaseWaitlist}/></Panel>
-        <Panel title="Saved Events & Wishlist" icon="▣" meta="" action={<Link to="/profile/saved" className="text-[7px] font-extrabold uppercase text-[#d2f000]">View All ({visibleSaved.length}) →</Link>}><SavedEvents items={visibleSaved.slice(0, 2)} onOpen={openEvent} onRemove={(id) => setEventSaved(id, false)}/></Panel>
+        <Panel title="Active Digital Pass" icon="▣" meta="● Reservation vault" action={<button onClick={() => navigate('/profile/pass')} className="rounded-full bg-[#292b21] px-2 py-1 text-[7px] font-extrabold uppercase text-[#d2f000]">View Pass</button>}><PassCard event={activePass} onOpen={openEvent}/><Waitlist items={waitlist} onOpen={openEvent} onRelease={releaseWaitlist}/></Panel>
+        <Panel title="Saved Events & Wishlist" icon="▣" meta="" action={<Link to="/profile/saved" className="text-[7px] font-extrabold uppercase text-[#d2f000]">View All ({visibleSaved.length}) →</Link>}><SavedEvents items={visibleSaved.slice(0, 2)} onOpen={openEvent} onRemove={removeSaved}/></Panel>
       </div>
       <div className="space-y-3">
         <Panel title="Favorite Genres" icon="▥" meta="Calibration"><div className="flex flex-wrap gap-1">{['Techno', 'UK Bass', 'Acid House', 'Industrial', 'Modular Synth', 'Dark Wave', 'Jungle', 'Deep Minimal', 'Experimental', 'Dubstep', 'Electro'].map((genre) => { const selected = user.favouriteGenres.includes(genre); return <button key={genre} onClick={() => updateUser({ favouriteGenres: selected ? user.favouriteGenres.filter((item) => item !== genre) : [...user.favouriteGenres, genre] })} className={`rounded-full border px-2 py-1 text-[7px] font-extrabold uppercase tracking-wide ${selected ? 'border-[#d2f000] bg-[#d2f000] text-[#202400]' : 'border-[#34343a] bg-[#242428] text-[#aead9f]'}`}>{genre}</button> })}</div><p className="mt-2 text-[7px] leading-3 text-[#8f9088]">Selected tags calibrate your BuzzBox home feed, private warehouse coordinates, and invite-only drops.</p></Panel>

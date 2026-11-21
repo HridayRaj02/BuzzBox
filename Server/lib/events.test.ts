@@ -1,3 +1,4 @@
+// Unit tests for event search, saved events, and transactional booking safeguards.
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { BookingError, createBooking, getEventBySlug, listEvents, toggleSaveEvent } from "./events";

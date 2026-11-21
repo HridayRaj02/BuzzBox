@@ -1,3 +1,4 @@
+// Browser entry point: mounts the React app inside the router.
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
