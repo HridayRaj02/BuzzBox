@@ -35,6 +35,12 @@ export default function AuthForm({ mode }) {
   const [showResetInfo, setShowResetInfo] = useState(false)
   const [email, setEmail] = useState('')
   const [passwordValue, setPasswordValue] = useState('')
+  const oauthStatus = new URLSearchParams(location.search).get('oauth')
+  const oauthNotice = oauthStatus === 'failed'
+    ? { type: 'error', message: 'Google sign-in could not be completed. Please try again or use email sign-in.' }
+    : oauthStatus === 'unavailable'
+      ? { type: 'error', message: 'Google sign-in is not configured on the server yet.' }
+      : null
   async function submit(event) {
     event.preventDefault()
     setNotice(null)
@@ -54,7 +60,7 @@ export default function AuthForm({ mode }) {
           password,
         })
       else await login(formData.get('email'), password)
-      navigate(location?.state?.from || '/explore', { replace: true })
+      navigate(location?.state?.from || '/experience', { replace: true })
     } catch (error) {
       setNotice({ type: 'error', message: error instanceof TypeError ? 'Could not reach the sign-in service. Check that the API server is running.' : error.message })
     } finally {
@@ -78,7 +84,7 @@ export default function AuthForm({ mode }) {
       </form>
 
       {showResetInfo && <p className="mt-2 border-l-2 border-[#dfff00] bg-[#232520] p-2 text-[10px] leading-5 text-[#e9edc6]" role="status">Password reset is not set up yet. Please contact BuzzBox support.</p>}
-      {notice && <p className={`${tw.notice} ${notice.type === 'error' ? 'border-[#ff534a] bg-[#281b1c] text-[#ffd2ce]' : 'border-[#dfff00] bg-[#232520] text-[#e9edc6]'}`} role="status">{notice.message}</p>}
+      {(notice || oauthNotice) && <p className={`${tw.notice} ${(notice || oauthNotice).type === 'error' ? 'border-[#ff534a] bg-[#281b1c] text-[#ffd2ce]' : 'border-[#dfff00] bg-[#232520] text-[#e9edc6]'}`} role="status">{(notice || oauthNotice).message}</p>}
 
       <div className="my-3 flex items-center gap-2.5 text-[8px] font-extrabold tracking-[.14em] text-[#77776f]"><span className="h-px flex-1 bg-[#333339]" />OR<span className="h-px flex-1 bg-[#333339]" /></div>
       <GoogleSignInButton />

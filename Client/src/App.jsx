@@ -23,7 +23,7 @@ function RequireAuth({ children }) {
 function RouteViews() {
   useScrollToTop()
   return <Routes>
-    <Route path="/" element={<Navigate to="/explore" replace />} />
+    <Route path="/" element={<Navigate to="/experience" replace />} />
     <Route path="/explore" element={<HomePage />} />
     <Route path="/experience" element={<ExperiencePage />} />
     <Route path="/radar" element={<RadarPage />} />
@@ -36,7 +36,7 @@ function RouteViews() {
     <Route path="/profile/:view" element={<RequireAuth><ProfilePage /></RequireAuth>} />
     <Route path="/host" element={<RequireAuth><main className="min-h-screen bg-[#131317] p-12 text-[#e4e1e7]"><h1 className="font-[Epilogue] text-3xl font-extrabold">HOST / ORGANIZER</h1><p className="mt-3 text-[#c6c9ab]">Organizer onboarding is coming soon.</p></main></RequireAuth>} />
     <Route path="/u/:handle" element={<ProfilePage publicView />} />
-    <Route path="*" element={<Navigate to="/explore" replace />} />
+    <Route path="*" element={<Navigate to="/experience" replace />} />
   </Routes>
 }
 

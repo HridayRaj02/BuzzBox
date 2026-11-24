@@ -40,6 +40,12 @@ async function main() {
     { title: "ART AFTER DARK", slug: "art-after-dark", category: EventCategory.ART_CULTURE, date: upcomingIndiaDate(10, 20), venue: 4, tags: ["Art", "Culture"] },
     { title: "ROOFTOP MOON RITUAL", slug: "rooftop-moon-ritual", category: EventCategory.EXPERIENCES, date: upcomingIndiaDate(12, 19), venue: 3, tags: ["Rooftop", "Immersive"] },
     { title: "AFTER HOURS: NO SLEEP CLUB", slug: "after-hours-no-sleep-club", category: EventCategory.AFTER_HOURS, date: upcomingIndiaDate(13, 23), venue: 0, tags: ["After hours", "House"] },
+    { title: "NEON BAITHAK: SITAAR & SYNTH", slug: "neon-baithak-sitaar-synth", category: EventCategory.MUSIC, date: upcomingIndiaDate(14, 20), venue: 1, featured: true, tags: ["Live music", "Electronic"] },
+    { title: "BASSLINE BAZAAR", slug: "bassline-bazaar", category: EventCategory.RAVE, date: upcomingIndiaDate(15, 22), venue: 0, tags: ["Bass", "Warehouse"] },
+    { title: "MIDNIGHT MURAL WALK", slug: "midnight-mural-walk", category: EventCategory.ART_CULTURE, date: upcomingIndiaDate(16, 19), venue: 2, tags: ["Art", "Walking tour"] },
+    { title: "OFF THE RECORD: IMPROV NIGHT", slug: "off-the-record-improv-night", category: EventCategory.COMEDY, date: upcomingIndiaDate(17, 20), venue: 4, tags: ["Improv", "Comedy"] },
+    { title: "SUNRISE TERRACE SOCIAL", slug: "sunrise-terrace-social", category: EventCategory.EXPERIENCES, date: upcomingIndiaDate(18, 6), venue: 3, tags: ["Rooftop", "Community"] },
+    { title: "THE SUNDAY VINYL EXCHANGE", slug: "the-sunday-vinyl-exchange", category: EventCategory.LIVE_SHOWS, date: upcomingIndiaDate(19, 16), venue: 1, tags: ["Vinyl", "Indie"] },
   ];
   for (const [index, spec] of specs.entries()) {
     const tiers = [

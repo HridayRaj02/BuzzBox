@@ -15,26 +15,26 @@
 
 <br />
 
-BuzzBox is a discovery and ticketing experience for India's underground nightlife and culture: warehouse raves, intimate listening rooms, comedy, festivals, clubs, and curated live events. It pairs a neon-on-dark React interface with an Express + PostgreSQL backend built around a rich event, venue, ticket, booking, and waitlist data model.
+BuzzBox is a full-stack discovery and ticket-reservation platform for India's underground nightlife and culture: warehouse raves, intimate listening rooms, comedy, festivals, clubs, and curated live events. It pairs a neon-on-dark React interface with an Express + PostgreSQL backend built around events, venues, ticket tiers, bookings, saved events, and waitlists.
 
-> **Status:** The client is connected to the Express API and local PostgreSQL database. Live events, account sessions, saved events, waitlists, profile preferences, and reservations persist in the database.
+> **Status:** The client is connected to the Express API and local PostgreSQL database. The local seed creates 15 upcoming events. Account sessions, saved events, waitlists, profile preferences, and reservations persist in the database.
 
 ## ✦ Highlights
 
 | Discovery | Event experience | Platform foundation |
 | :-- | :-- | :-- |
 | City, date, category, and keyword filtering | Ticket-tier selection with availability limits | PostgreSQL schema for events, venues, artists, users, tickets, bookings, and waitlists |
-| Curated vibes and city circuits | Save events, share links, map directions, and calendar downloads | Prisma-powered event search, pagination cursor support, and transaction-safe booking logic |
+| Experiences is the default landing page, with curated vibes and city circuits | Save events, share links, map directions, and calendar downloads | Prisma-powered event search, pagination cursor support, and transaction-safe booking logic |
 | Radar and weekend event views | Related events and event rules at a glance | Typed server-side data access with tests |
 
 ## 🎨 Product surface
 
 - **Explore** — cultural circuits, city selection, featured radar, and organizer CTA.
-- **Experience** — browse by vibe and discover BuzzBox Originals.
+- **Experience** — the default landing page after a successful email or Google login; browse by vibe and discover BuzzBox Originals.
 - **Radar** — filter live events by city, date, category, and keywords.
 - **Events** — curated weekend plans.
 - **Event details** — lineups, venue information, directions, ticket tiers, save/share controls, and an `.ics` calendar export.
-- **Profile & auth views** — protected profile routes and public profile URLs.
+- **Profile & auth views** — protected profile routes, email/password sessions, and Google OAuth sign-in.
 
 ## 🧱 Tech stack
 
@@ -53,14 +53,25 @@ BuzzBox is a discovery and ticketing experience for India's underground nightlif
 - npm 10+
 - PostgreSQL 14+
 
-### 1. Set up the database
+### 1. Configure the server and database
 
 ```bash
 cd Server
-cp .env.example .env
 ```
 
-Update `DATABASE_URL` in `Server/.env` to point at your local PostgreSQL database, then run:
+Create `Server/.env` and set the required values:
+
+```dotenv
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/buzzbox"
+PORT=2222
+CLIENT_URL="http://localhost:5173"
+OAUTH_SESSION_SECRET="replace-this-with-a-long-random-secret"
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+GOOGLE_CALLBACK_URL="http://localhost:2222/api/auth/google/callback"
+```
+
+Leave the three `GOOGLE_*` values empty if you only want email/password authentication. Then run:
 
 ```bash
 npm install
@@ -109,6 +120,17 @@ Returns publicly visible, published events from PostgreSQL, ordered by upcoming 
 curl "http://localhost:2222/api/events?when=weekend&category=MUSIC&limit=8"
 ```
 
+### Main endpoint groups
+
+| Group | Endpoints | Access |
+| :-- | :-- | :-- |
+| System | `GET /api/health`, `GET /api/cities` | Public |
+| Auth | `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Public/session |
+| Google OAuth | `GET /api/auth/google`, `GET /api/auth/google/callback` | Public |
+| Events | `GET /api/events`, `GET /api/events/featured`, `GET /api/events/:slug` | Public |
+| Bookings | save/unsave, waitlist, ticket reservation endpoints | Signed in |
+| Profile | `PATCH /api/me`, saved events, waitlist, bookings | Signed in |
+
 ## 🗂️ Repository layout
 
 ```text
@@ -149,7 +171,19 @@ npm run db:validate
 
 ## 🔐 Google sign-in
 
-Google authentication is implemented with Passport and OAuth 2.0. Phone OTP and Apple sign-in have been removed from the login page. Create a Google OAuth web client, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_CALLBACK_URL` in `Server/.env`, then use the callback URL `http://localhost:2222/api/auth/google/callback` during local development. Until those Google credentials are configured, the Google button safely reports that sign-in is unavailable. See [`Server/README.md`](./Server/README.md) for the complete setup.
+Google authentication is implemented with Passport and OAuth 2.0. The flow uses a random, short-lived OAuth `state` value stored in the Express session to protect the callback request.
+
+1. In Google Cloud Console, create an OAuth 2.0 **Web application** client.
+2. Add this exact authorised redirect URI for local development:
+
+   ```text
+   http://localhost:2222/api/auth/google/callback
+   ```
+
+3. Put the client ID, client secret, and callback URL in `Server/.env`.
+4. Restart the API. Successful Google sign-in redirects the user to `/experience`.
+
+If Google returns `redirect_uri_mismatch`, the URL registered in Google Cloud Console does not exactly match `GOOGLE_CALLBACK_URL`.
 
 ## 🗄️ Check saved user data
 
@@ -164,7 +198,7 @@ Register a server with these local-development values:
 | Host name/address | `127.0.0.1` |
 | Port | `5432` |
 | Maintenance database | `postgres` |
-| Username | `hridayrajsinghkrishnawat` |
+| Username | The username from your `DATABASE_URL` |
 | Database to browse | `buzzbox` |
 
 The PostgreSQL server and port must match the `DATABASE_URL` in `Server/.env`. In pgAdmin's **Query Tool**, run the following to confirm that it is connected to the same database as BuzzBox:
@@ -194,8 +228,9 @@ Then run the same SQL query above. Passwords are intentionally never readable: o
 
 - Live event data comes from `/api/events`; files under `Client/src/data/` contain only presentation configuration.
 - Server routes are grouped by system, auth, events, profile, and booking actions. Controllers call reusable domain logic in `Server/lib/`.
-- `.env.example` documents every required environment-variable key; `Server/.env` uses the same keys but holds this machine's local values and must stay uncommitted.
+- `Server/.env` contains local secrets and must stay uncommitted. Use the configuration block above as the safe template.
 - Organizer onboarding and several organizer-console controls are intentionally marked as preview/coming soon in the UI.
+- Reservations are stored safely in the database, but a real payment provider has not been integrated yet.
 
 ## 📜 License
 
