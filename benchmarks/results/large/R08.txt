@@ -1,0 +1,4 @@
+Raw EXPLAIN plan: R08
+STATUS: NOT MEASURED — this file is a placeholder, not a query plan.
+No corresponding raw plan was available in the workspace when this file was created.
+Generate the real plan with: ./benchmarks/run_benchmark.sh <large_database> large 3 <optimized-workload.sql>

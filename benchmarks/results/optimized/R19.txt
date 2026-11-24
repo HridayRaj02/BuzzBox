@@ -1,0 +1,4 @@
+Raw EXPLAIN plan: R19
+STATUS: NOT MEASURED — this file is a placeholder, not a query plan.
+No corresponding raw plan was available in the workspace when this file was created.
+Generate the real plan with: ./benchmarks/run_benchmark.sh <database> optimized 3 sql/06_optimized_queries.sql
